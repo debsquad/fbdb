@@ -69,7 +69,8 @@ class Book(Base):
             Owner : who owns the book
             Location : where is the book now
             Acquired : where the book was rent ou bought or gave
-            Type : Polar, Horror ...
+            Genre/Type : Polar, Horror ...
+            Synopsis : resume of the book
             Keywords
 
     """
@@ -89,8 +90,9 @@ class Book(Base):
     owner = Column(String)
     location = Column(String)
     acquired = Column(String)
-    type = Column(String)
+    genre = Column(String)
     keywords = Column(String)
+    synopsis = Column(String)
 
 class AddBookCommand():
     __command_name__ = "add"
@@ -111,8 +113,9 @@ class AddBookCommand():
             "owner": namespace.owner,
             "location": namespace.location,
             "acquired": namespace.adquired,
-            "type": namespace.genre,
+            "genre": namespace.genre,
             "keywords": namespace.keywords,
+            "synopsis": namespace.synopsis,
             }
 
         try:
@@ -293,6 +296,41 @@ if __name__ == "__main__":
         except AttributeError:
             ui.original_copyright = None
 
+        try:
+            if ui.owner:
+                ui.owner = ui.owner.decode("utf_8")
+        except AttributeError:
+            ui.owner = None
+        try:
+            if ui.location:
+                ui.location = ui.location.decode("utf_8")
+        except AttributeError:
+            ui.location = None
+
+        try:
+            if ui.acquirred:
+                ui.acquirred = ui.acquirred.decode("utf_8")
+        except AttributeError:
+            ui.acquirred = None
+
+        try:
+            if ui.genre:
+                ui.genre = ui.genre.decode("utf_8")
+        except AttributeError:
+            ui.genre = None
+
+        try:
+            if ui.synopsis:
+                ui.synopsis = ui.synopsis.decode("utf_8")
+        except AttributeError:
+            ui.synopsis = None
+
+        try:
+            if ui.keywords:
+                ui.keywords = ui.keywords.decode("utf_8")
+        except AttributeError:
+            ui.keywords = None
+
         return ui
 
     parser = argparse.ArgumentParser(description="Usage=%prog")
@@ -335,6 +373,24 @@ if __name__ == "__main__":
     parser.add_argument("-U", "--Unread",
                         action="store_false", dest="read", default=True,
                         help="Book on ToRead list :)")
+    parser.add_argument("-o", "--owner",
+                        action="store", dest="owner",
+                        help="Entity who own the book")
+    parser.add_argument("-l", "--location",
+                        action="store", dest="location",
+                        help="where the book is")
+    parser.add_argument("-A", "--acquired",
+                        action="store", dest="acquirred",
+                        help="where the book was gotten")
+    parser.add_argument("-g", "--genre",
+                        action="store", dest="genre",
+                        help="type/genre of the book")
+    parser.add_argument("-s", "--synopsis",
+                        action="store", dest="synopsis",
+                        help="Synopsis/Resume of the book")
+    parser.add_argument("-k", "--keywords", nargs='?'
+                        action="store", dest="keywords"
+                        help="Keywords about book subject")
 
     namespace = parser.parse_args(sys.argv[1:])
 
