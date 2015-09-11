@@ -68,8 +68,8 @@ class Book(Base):
             May has commentary from user
             Owner : who owns the book
             Location : where is the book now
-            Adquired : where the book was rent ou bought or gave
-            Genre : Polar, Horror ...
+            Acquired : where the book was rent ou bought or gave
+            Type : Polar, Horror ...
             Keywords
 
     """
@@ -88,8 +88,8 @@ class Book(Base):
     read = Column(Boolean, default=False)
     owner = Column(String)
     location = Column(String)
-    aquired = Column(String)
-    genre = Column(String)
+    acquired = Column(String)
+    type = Column(String)
     keywords = Column(String)
 
 class AddBookCommand():
@@ -108,6 +108,11 @@ class AddBookCommand():
             "note": namespace.note,
             "comments": namespace.comments,
             "read": namespace.read,
+            "owner": namespace.owner,
+            "location": namespace.location,
+            "acquired": namespace.adquired,
+            "type": namespace.genre,
+            "keywords": namespace.keywords,
             }
 
         try:
