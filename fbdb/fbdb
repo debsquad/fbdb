@@ -1,0 +1,355 @@
+#!/usr/bin/env python
+#
+# fbdb : franck's book database
+
+import pdb
+import datetime
+import os
+import sys
+import re
+
+import argparse
+import ConfigParser
+
+import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Float, Date, Boolean 
+from sqlalchemy import ForeignKey
+
+#import requests
+#from bs4 import BeautifulSoup, SoupStrainer
+
+try:
+    from prettytable import PrettyTable
+    mod_pt = True
+except ImportError:
+    mod_pt = False
+    pass
+
+confparser = ConfigParser.ConfigParser()
+home = os.path.expanduser("~")
+rc_file = ".franckdbrc"
+
+confparser.read(os.path.join(home, rc_file))
+
+### For adding film to your remind calendar
+try:
+    remind = confparser.get("fbdb", "remind")
+    reminder_file = os.path.join(home, remind)
+except ConfigParser.NoOptionError:
+    reminder_file = None
+
+try:
+    db_url = confparser.get("fbdb", "url")
+except ConfigParser.NoOptionError:
+    db_location = os.path.join(home, ".fbdb.sql")
+    db_url = "sqlite:///{}".format(db_location)
+
+try:
+    language = confparser.get("fbdb", "language")
+except ConfigParser.NoOptionError:
+    language = None
+
+Base = declarative_base()
+
+class Book(Base):
+    """ 
+        A Book has :
+            Title
+            Author
+            Copyright on the book read
+            Original Copyright (first parution of the book)
+            Language in which the book was readen
+            Began to be read by User on date
+            Ended to be read by User on date
+            As a note on a scale of 10 ; default 5
+            May has commentary from user
+            Owner : who owns the book
+            Location : where is the book now
+            Adquired : where the book was rent ou bought or gave
+            Genre : Polar, Horror ...
+            Keywords
+
+    """
+    __tablename__="book"
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(Date, default=datetime.date.today())
+    title = Column(String, nullable=False)
+    author = Column(String, nullable=False)
+    copyright = Column(String)
+    original_copyright = Column(String)
+    language = Column(String)
+    datebegin = Column(Date, default=datetime.date.today())
+    dateend = Column(Date, default=datetime.date.today())
+    note = Column(Float, default=5)
+    comments = Column(String, default="")
+    read = Column(Boolean, default=False)
+    owner = Column(String)
+    location = Column(String)
+    aquired = Column(String)
+    genre = Column(String)
+    keywords = Column(String)
+
+class AddBookCommand():
+    __command_name__ = "add"
+    
+    def run(self, session, namespace):
+
+        valuesbook = {
+            "title": namespace.title,
+            "author": namespace.author,
+            "copyright": namespace.copyright,
+            "original_copyright": namespace.original_copyright,
+            "language": namespace.language,
+            "datebegin": namespace.datebegin,
+            "dateend" : namespace.dateend,
+            "note": namespace.note,
+            "comments": namespace.comments,
+            "read": namespace.read,
+            }
+
+        try:
+            new_entry = Book(**valuesbook)
+            session.add(new_entry)
+            session.commit()
+        except sqlalchemy.exc.IntegrityError:
+            print("error while adding book")
+            return False
+        
+        print("added {} in Book database".format(namespace.title))
+        if reminder_file and namespace.dateend:
+            reminder = "rem {} msg %\"{} de {}%\"\n".format(
+                                        namespace.dateend.isoformat(),
+                                        namespace.title,
+                                        namespace.author,
+                                        )
+            with open(reminder_file, 'a') as f:
+                f.write(reminder)
+
+        return True
+
+class FindBookCommand():
+    pass
+
+class UpdateBookCommand():
+    pass
+###############################################################################
+#
+#class FindFilmCommand():
+#    """
+#    Print list of films
+#    Should be able to launch in browser specified in configparser
+#    the imdb entry on internet
+#    """
+#    __command_name__ = "find"
+#    def run(self, session, options):
+#        query = session.query(Film)
+#        if options.imdbtt:
+#            query = query.filter(Film.imdbtt == options.imdbtt)
+#        if not options.seen:
+#            query = query.filter(Film.seen == False)
+#        if options.title:
+#            for keyword in options.title:
+#                keyword="%{}%".format(keyword)
+#                query = query.filter(
+#                            FilmAkas.imdbtt == Film.imdbtt
+#                            ).filter(
+#                            FilmAkas.title.ilike(keyword))
+#        if options.nst:
+#            query = query.filter(Film.note >= options.nst)
+#        if options.nit:
+#            query = query.filter(Film.note <= options.nit)
+#        if options.note:
+#            query = query.filter(Film.note == options.note)
+#        if options.dateview:
+#            query = query.filter(Film.dateview == options.dateview)
+#        if options.year:
+#            query = query.filter(Film.year == options.year)
+#        if options.fot:
+#            query = query.filter(Film.year <= options.fot)
+#        if options.fyt:
+#            query = query.filter(Film.year >= options.fyt)
+#        
+#        query = query.order_by(Film.note)
+#        query = query.all()
+#        if mod_pt:
+#            pt = PrettyTable(["imdb tt", "title", "year", "dateview",
+#                            "note", "comment", "seen"])
+#        for u in query:
+#            title = session.query(FilmAkas).filter(
+#                                        FilmAkas.imdbtt == u.imdbtt
+#                                        ).filter(
+#                                        FilmAkas.country == "Release Info"
+#                                        ).first()
+#            if mod_pt:
+#                pt.add_row([u.imdbtt.encode("utf_8"),
+#                            title.title.encode("utf_8"),
+#                            u.year, u.dateview, u.note,
+#                            u.comment.encode("utf_8"), u.seen])
+#            
+#            else:
+#                print("{} ; {} ; {} ; {} ; {} ; {} ; {}".format(
+#                                                u.imdbtt.encode("utf_8"), 
+#                                                title.title.encode("utf_8"),
+#                                                u.year, 
+#                                                u.dateview, 
+#                                                u.note, 
+#                                                u.comment.encode("utf_8"),
+#                                                u.seen))
+#        if mod_pt:
+#            print(pt)
+#
+###############################################################################
+
+if __name__ == "__main__":
+
+    def process_userinput(ui):
+        def _check_date(val):
+            """ Return datetime.date() """
+            msg = "Date must be in format [[[YY]yy]mm]dd ; date of view default to today."
+            year = datetime.date.today().year
+            month = datetime.date.today().month
+            day = datetime.date.today().day
+            #if val is None:
+            #    val = datetime.date(year, month, day)
+            if len(val) == 10:                      # ISOFORMAT YYYY-mm-dd
+                val = datetime.date(int(val[0:4]), int(val[5:7]), int(val[8:]))
+            elif len(val) == 8:                          # format YYYYmmdd
+                val = datetime.date(int(val[0:4]), int(val[4:6]), int(val[6:]))
+            elif len(val) == 6:                          # format YYmmdd
+                val = datetime.date(int("20"+str(val[0:2])), int(val[2:4]), 
+                                                                int(val[4:]))
+            elif len(val) == 4:                          # format mmdd
+                val = datetime.date(year, int(val[0:2]), int(val[2:]))
+            elif len(val) == 2:                          # format dd
+                val = datetime.date(year, month, int(val[0:]))
+            else:
+                val= datetime.date(year, manth, day)
+
+            return val
+        
+        try:
+            if ui.datebegin:
+                ui.datebegin = _check_date(ui.datebegin)
+        except AttributeError:
+            #if command_name == "add"
+            #    ui.dateview = _check_date()
+            #else:
+            ui.datebegin = None
+
+        try:
+            if ui.dateend:
+                ui.dateend = _check_date(ui.dateend)
+        except AttributeError:
+            #if command_name == "add"
+            #    ui.dateview = _check_date()
+            #else:
+            ui.dateend = None
+        
+        try:
+            if ui.language:
+                ui.language = ui.language.decode("utf_8")
+            else:
+                ui.language = language
+        except AttributeError:
+            ui.language = language
+
+        try:
+            if ui.note:
+                float(ui.note)
+        except AttributeError:
+            ui.note = None
+        try:
+            if ui.comments:
+                ui.comments = ui.comments.decode("utf_8")
+        except AttributeError:
+            ui.comments = None
+        try:
+            if ui.title:
+                ui.title = ui.title.decode("utf_8")
+        except AttributeError:
+            ui.title = None
+        try:
+            if ui.author:
+                ui.author = ui.author.decode("utf_8")
+        except AttributeError:
+            ui.author = None
+
+        try:
+            if ui.copyright:
+                ui.copyright = ui.copyright.decode("utf_8")
+        except AttributeError:
+            ui.copyright = None
+        try:
+            if ui.original_copyright:
+                ui.original_copyright = ui.original_copyright.decode("utf_8")
+        except AttributeError:
+            ui.original_copyright = None
+
+        return ui
+
+    parser = argparse.ArgumentParser(description="Usage=%prog")
+    parser.add_argument('command_action', nargs=1,
+                    choices=["add", "update", "list", "find" ],
+                    help="action to perform on db (add, list...)")
+    #(namespace_cmd, args) = parser.parse_known_args(sys.argv[1:])
+    #command_name = namespace_cmd.command_action[0]
+   
+    parser.add_argument("-t", "--title",
+                        action="store", dest="title",
+                        help="Title of the book")
+    parser.add_argument("-a", "--author",
+                        action="store", dest="author",
+                        help="Author of the book")
+    parser.add_argument("-l", "--language",
+                        action="store", dest="language",
+                        help="Language of the book ; may be store in db_conf")
+    parser.add_argument("--cp", "--copyright",
+                        action="store", dest="copyright",
+                        help="copyright of this book")
+    parser.add_argument("-C", "--COPYRIGHT",
+                        action="store", dest="original_copyright",
+                        help="Copyright of the original book (first printed)")
+    parser.add_argument("-d", "--datebegin",
+                        action="store", dest="datebegin",
+                        help="Date when began to read the book")
+    parser.add_argument("-e", "--dateend",
+                        action="store", dest="dateend",
+                        help="Date when ended to read the book")
+    parser.add_argument("-n", "--note", type=float,
+                        action="store", dest="note",
+                        help="Note of the book")
+    parser.add_argument("-c", "--comments",
+                        action="store", dest="comments",
+                        help="Comments about this book")
+    parser.add_argument("-R", "--Read",
+                        action="store_true", dest="read", default=True,
+                        help="Book already read ; default action")
+    parser.add_argument("-U", "--Unread",
+                        action="store_false", dest="read", default=True,
+                        help="Book on ToRead list :)")
+
+    namespace = parser.parse_args(sys.argv[1:])
+
+    commands = {
+        "add": AddBookCommand,
+        "find": FindBookCommand,
+        "list": FindBookCommand,
+        "update": UpdateBookCommand,
+        }
+    Command = commands[namespace.command_action[0]]
+    cmd = Command()
+    namespace = process_userinput(namespace)
+
+    engine = create_engine(db_url, echo=False, convert_unicode=True)
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+
+    try:
+        cmd.run(session, namespace)
+    except KeyboardInterrupt:
+        sys.exit(1)
