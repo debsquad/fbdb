@@ -82,11 +82,11 @@ class Book(Base):
     copyright = Column(String)
     original_copyright = Column(String)
     language = Column(String)
-    datebegin = Column(Date, default=datetime.date.today())
-    dateend = Column(Date, default=datetime.date.today())
-    note = Column(Float, default=5)
-    comments = Column(String, default="")
-    read = Column(Boolean, default=False)
+    datebegin = Column(Date)
+    dateend = Column(Date)
+    note = Column(Float)
+    comments = Column(String)
+    read = Column(Boolean)
     owner = Column(String)
     location = Column(String)
     acquired = Column(String)
@@ -112,7 +112,7 @@ class AddBookCommand():
             "read": namespace.read,
             "owner": namespace.owner,
             "location": namespace.location,
-            "acquired": namespace.adquired,
+            "acquired": namespace.acquired,
             "genre": namespace.genre,
             "keywords": namespace.keywords,
             "synopsis": namespace.synopsis,
@@ -376,11 +376,11 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--owner",
                         action="store", dest="owner",
                         help="Entity who own the book")
-    parser.add_argument("-l", "--location",
+    parser.add_argument("-L", "--location",
                         action="store", dest="location",
                         help="where the book is")
     parser.add_argument("-A", "--acquired",
-                        action="store", dest="acquirred",
+                        action="store", dest="acquired",
                         help="where the book was gotten")
     parser.add_argument("-g", "--genre",
                         action="store", dest="genre",
@@ -388,8 +388,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--synopsis",
                         action="store", dest="synopsis",
                         help="Synopsis/Resume of the book")
-    parser.add_argument("-k", "--keywords", nargs='?'
-                        action="store", dest="keywords"
+    parser.add_argument("-k", "--keywords", nargs='?',
+                        action="store", dest="keywords",
                         help="Keywords about book subject")
 
     namespace = parser.parse_args(sys.argv[1:])
