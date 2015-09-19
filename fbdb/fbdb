@@ -52,6 +52,12 @@ try:
 except ConfigParser.NoOptionError:
     language = None
 
+try:
+    owner = confparser.get("fbdb", "owner")
+except ConfigParser.NoOptionError:
+    owner = None
+
+
 Base = declarative_base()
 
 class Book(Base):
@@ -69,6 +75,7 @@ class Book(Base):
             Owner : who owns the book
             Location : where is the book now
             Acquired : where the book was rent ou bought or gave
+            Date of aquired
             Genre/Type : Polar, Horror ...
             Synopsis : resume of the book
             Keywords
@@ -90,6 +97,7 @@ class Book(Base):
     owner = Column(String)
     location = Column(String)
     acquired = Column(String)
+    date_of_acquired = Column(Date)
     genre = Column(String)
     keywords = Column(String)
     synopsis = Column(String)
@@ -113,6 +121,7 @@ class AddBookCommand():
             "owner": namespace.owner,
             "location": namespace.location,
             "acquired": namespace.acquired,
+            "date_of_acquired": namespace.date_of_acquired,
             "genre": namespace.genre,
             "keywords": namespace.keywords,
             "synopsis": namespace.synopsis,
@@ -126,7 +135,8 @@ class AddBookCommand():
             print("error while adding book")
             return False
         
-        print("added {} in Book database".format(namespace.title))
+        print("added {} in Book database".format(
+                                        namespace.title.encode("utf8")))
         if reminder_file and namespace.dateend:
             reminder = "rem {} msg %\"{} de {}%\"\n".format(
                                         namespace.dateend.isoformat(),
@@ -139,46 +149,27 @@ class AddBookCommand():
         return True
 
 class FindBookCommand():
-    pass
+    __command_name__ = "find"
+
+    def run(self, session, namespace):
+        query = session.query(Book)
+        if namespace.title:
+            for keyword in namespace.title:
+                keyword="%{}%".format(keyword)
+                query = query.filter(Book.title.ilike(keyword))
+
+        query = query.order_by(Book.note)
+        query = query.all()
+
+        for u in query:
+            print("{} : {} by {}".format(u.id, 
+                                                    u.title.encode("utf_8"),
+                                                    u.author.encode("utf_8")))
 
 class UpdateBookCommand():
     pass
 ###############################################################################
-#
 #class FindFilmCommand():
-#    """
-#    Print list of films
-#    Should be able to launch in browser specified in configparser
-#    the imdb entry on internet
-#    """
-#    __command_name__ = "find"
-#    def run(self, session, options):
-#        query = session.query(Film)
-#        if options.imdbtt:
-#            query = query.filter(Film.imdbtt == options.imdbtt)
-#        if not options.seen:
-#            query = query.filter(Film.seen == False)
-#        if options.title:
-#            for keyword in options.title:
-#                keyword="%{}%".format(keyword)
-#                query = query.filter(
-#                            FilmAkas.imdbtt == Film.imdbtt
-#                            ).filter(
-#                            FilmAkas.title.ilike(keyword))
-#        if options.nst:
-#            query = query.filter(Film.note >= options.nst)
-#        if options.nit:
-#            query = query.filter(Film.note <= options.nit)
-#        if options.note:
-#            query = query.filter(Film.note == options.note)
-#        if options.dateview:
-#            query = query.filter(Film.dateview == options.dateview)
-#        if options.year:
-#            query = query.filter(Film.year == options.year)
-#        if options.fot:
-#            query = query.filter(Film.year <= options.fot)
-#        if options.fyt:
-#            query = query.filter(Film.year >= options.fyt)
 #        
 #        query = query.order_by(Film.note)
 #        query = query.all()
@@ -257,6 +248,12 @@ if __name__ == "__main__":
             ui.dateend = None
         
         try:
+            if ui.date_of_acquired:
+                ui.date_of_acquired = _check_date(ui.date_of_acquired)
+        except AttributeError:
+            ui.date_of_acquired = None
+
+        try:
             if ui.language:
                 ui.language = ui.language.decode("utf_8")
             else:
@@ -299,8 +296,10 @@ if __name__ == "__main__":
         try:
             if ui.owner:
                 ui.owner = ui.owner.decode("utf_8")
+            else:
+                ui.owner = owner
         except AttributeError:
-            ui.owner = None
+            ui.owner = owner
         try:
             if ui.location:
                 ui.location = ui.location.decode("utf_8")
@@ -382,6 +381,9 @@ if __name__ == "__main__":
     parser.add_argument("-A", "--acquired",
                         action="store", dest="acquired",
                         help="where the book was gotten")
+    parser.add_argument("-D", "--date_of_acquired",
+                        action="store", dest="date_of_acquired",
+                        help="When the book was bought")
     parser.add_argument("-g", "--genre",
                         action="store", dest="genre",
                         help="type/genre of the book")
