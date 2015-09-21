@@ -75,7 +75,8 @@ class Book(Base):
             Owner : who owns the book
             Location : where is the book now
             Acquired : where the book was rent ou bought or gave
-            Date of aquired
+            Date of acquired
+            Place of acquired
             Genre/Type : Polar, Horror ...
             Synopsis : resume of the book
             Keywords
@@ -98,6 +99,7 @@ class Book(Base):
     location = Column(String)
     acquired = Column(String)
     date_of_acquired = Column(Date)
+    place_of_acquired = Column(String)
     genre = Column(String)
     keywords = Column(String)
     synopsis = Column(String)
@@ -122,6 +124,7 @@ class AddBookCommand():
             "location": namespace.location,
             "acquired": namespace.acquired,
             "date_of_acquired": namespace.date_of_acquired,
+            "place_of_acquired": namespace.place_of_acquired,
             "genre": namespace.genre,
             "keywords": namespace.keywords,
             "synopsis": namespace.synopsis,
@@ -167,7 +170,67 @@ class FindBookCommand():
                                                     u.author.encode("utf_8")))
 
 class UpdateBookCommand():
-    pass
+    __command_name__ = "update"
+
+    def run(self, session, namespace):
+        if not namespace.id_entry:
+            print("To update, you must provide the book id entry, please")
+            sys.exit(16)
+        query = session.query(Book)
+        try:
+            to_update = query.filter(Book.id == namespace.id_entry).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            print("Book id doesn't exist")
+
+        if namespace.title:
+            to_update.title = namespace.title
+        if namespace.author:
+            to_update.author = namespace.author
+        if namespace.copyright:
+            to_update.copyright = namespace.copyright
+        if namespace.original_copyright:
+             to_update.original_copyright = namespace.original_copyright
+        if namespace.datebegin:
+            to_update.datebegin = namespace.datebegin
+        if namespace.dateend:
+            to_update.dateend = namespace.dateend
+        if namespace.note:
+            to_update.note = namespace.note
+        if namespace.comments:
+            to_update.comments = namespace.comments
+        if namespace.read:
+            to_update.read = namespace.read
+        if namespace.owner:
+            to_update.owner = namespace.owner
+        if namespace.location:
+            to_update.location = namespace.location
+        if namespace.acquired:
+            to_update.acquired = namespace.acquired
+        if namespace.date_of_acquired:
+            to_update.date_of_acquired = namespace.date_of_acquired
+        if namespace.place_of_acquired:
+            to_update.place_of_acquired = namespace.place_of_acquired
+        if namespace.genre:
+            to_update.genre = namespace.genre
+        if namespace.synopsis:
+            to_update.synopsis = namespace.synopsis
+        if namespace.keywords:
+            to_update.keywords = namespace.keywords
+        
+        session.commit()
+        
+        if reminder_file and namespace.dateend:
+            reminder = "rem {} msg %\"{} de {}%\"\n".format(
+                                        to_update.dateend.isoformat(),
+                                        to_update.title,
+                                        to_update.author,
+                                        )
+            with open(reminder_file, 'a') as f:
+                f.write(reminder)
+
+        return True
+
+
 ###############################################################################
 #class FindFilmCommand():
 #        
@@ -311,6 +374,12 @@ if __name__ == "__main__":
                 ui.acquirred = ui.acquirred.decode("utf_8")
         except AttributeError:
             ui.acquirred = None
+        
+        try:
+            if ui.place_of_acquired:
+                ui.place_of_acquired = ui.place_of_acquired.decode("utf_8")
+        except AttributeError:
+            ui.place_of_acquired = None
 
         try:
             if ui.genre:
@@ -338,7 +407,10 @@ if __name__ == "__main__":
                     help="action to perform on db (add, list...)")
     #(namespace_cmd, args) = parser.parse_known_args(sys.argv[1:])
     #command_name = namespace_cmd.command_action[0]
-   
+    
+    parser.add_argument("-i", "--id", "--id_entry",
+                        action="store", type=int, dest="id_entry",
+                        help="Id entry for updating")
     parser.add_argument("-t", "--title",
                         action="store", dest="title",
                         help="Title of the book")
@@ -384,6 +456,9 @@ if __name__ == "__main__":
     parser.add_argument("-D", "--date_of_acquired",
                         action="store", dest="date_of_acquired",
                         help="When the book was bought")
+    parser.add_argument("-P", "--place_of_acquired",
+                        action="store", dest="place_of_acquired",
+                        help="Where the book was bought/given...")
     parser.add_argument("-g", "--genre",
                         action="store", dest="genre",
                         help="type/genre of the book")
