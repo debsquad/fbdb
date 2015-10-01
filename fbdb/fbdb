@@ -157,9 +157,9 @@ class FindBookCommand():
     def run(self, session, namespace):
         query = session.query(Book)
         if namespace.title:
-            for keyword in namespace.title:
-                keyword="%{}%".format(keyword)
-                query = query.filter(Book.title.ilike(keyword))
+            #for keyword in namespace.title:
+            keyword="%{}%".format(namespace.title)
+            query = query.filter(Book.title.ilike(keyword))
 
         query = query.order_by(Book.note)
         query = query.all()
