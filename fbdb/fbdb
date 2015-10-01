@@ -143,8 +143,8 @@ class AddBookCommand():
         if reminder_file and namespace.dateend:
             reminder = "rem {} msg %\"{} de {}%\"\n".format(
                                         namespace.dateend.isoformat(),
-                                        namespace.title,
-                                        namespace.author,
+                                        namespace.title.encode("utf_8"),
+                                        namespace.author.encode("utf_8"),
                                         )
             with open(reminder_file, 'a') as f:
                 f.write(reminder)
@@ -165,9 +165,9 @@ class FindBookCommand():
         query = query.all()
 
         for u in query:
-            print("{} : {} by {}".format(u.id, 
-                                                    u.title.encode("utf_8"),
-                                                    u.author.encode("utf_8")))
+            print("{} : {} by {}.".format(u.id, 
+                                            u.title.encode("utf_8"),
+                                            u.author.encode("utf_8")))
 
 class UpdateBookCommand():
     __command_name__ = "update"
