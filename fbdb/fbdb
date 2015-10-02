@@ -465,7 +465,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--synopsis",
                         action="store", dest="synopsis",
                         help="Synopsis/Resume of the book")
-    parser.add_argument("-k", "--keywords", nargs='?',
+    parser.add_argument("-k", "--keywords", nargs='+',
                         action="store", dest="keywords",
                         help="Keywords about book subject")
 
