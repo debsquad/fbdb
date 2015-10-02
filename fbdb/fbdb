@@ -181,7 +181,6 @@ class UpdateBookCommand():
             to_update = query.filter(Book.id == namespace.id_entry).one()
         except sqlalchemy.orm.exc.NoResultFound:
             print("Book id doesn't exist")
-
         if namespace.title:
             to_update.title = namespace.title
         if namespace.author:
@@ -216,7 +215,6 @@ class UpdateBookCommand():
             to_update.synopsis = namespace.synopsis
         if namespace.keywords:
             to_update.keywords = namespace.keywords
-        
         session.commit()
         
         if reminder_file and namespace.dateend:
@@ -230,40 +228,6 @@ class UpdateBookCommand():
 
         return True
 
-
-###############################################################################
-#class FindFilmCommand():
-#        
-#        query = query.order_by(Film.note)
-#        query = query.all()
-#        if mod_pt:
-#            pt = PrettyTable(["imdb tt", "title", "year", "dateview",
-#                            "note", "comment", "seen"])
-#        for u in query:
-#            title = session.query(FilmAkas).filter(
-#                                        FilmAkas.imdbtt == u.imdbtt
-#                                        ).filter(
-#                                        FilmAkas.country == "Release Info"
-#                                        ).first()
-#            if mod_pt:
-#                pt.add_row([u.imdbtt.encode("utf_8"),
-#                            title.title.encode("utf_8"),
-#                            u.year, u.dateview, u.note,
-#                            u.comment.encode("utf_8"), u.seen])
-#            
-#            else:
-#                print("{} ; {} ; {} ; {} ; {} ; {} ; {}".format(
-#                                                u.imdbtt.encode("utf_8"), 
-#                                                title.title.encode("utf_8"),
-#                                                u.year, 
-#                                                u.dateview, 
-#                                                u.note, 
-#                                                u.comment.encode("utf_8"),
-#                                                u.seen))
-#        if mod_pt:
-#            print(pt)
-#
-###############################################################################
 
 if __name__ == "__main__":
 
@@ -395,7 +359,9 @@ if __name__ == "__main__":
 
         try:
             if ui.keywords:
-                ui.keywords = ui.keywords.decode("utf_8")
+                k_list = [ k.decode("utf_8") for k in ui.keywords]
+                ui.keywords = k_list
+            pdb.set_trace()
         except AttributeError:
             ui.keywords = None
 
@@ -470,7 +436,6 @@ if __name__ == "__main__":
                         help="Keywords about book subject")
 
     namespace = parser.parse_args(sys.argv[1:])
-
     commands = {
         "add": AddBookCommand,
         "find": FindBookCommand,
