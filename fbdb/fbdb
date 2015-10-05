@@ -361,7 +361,6 @@ if __name__ == "__main__":
             if ui.keywords:
                 k_list = [ k.decode("utf_8") for k in ui.keywords]
                 ui.keywords = k_list
-            pdb.set_trace()
         except AttributeError:
             ui.keywords = None
 
